@@ -1004,20 +1004,33 @@ class Axes3D(Axes):
         Looks for the nearest edge to the point and then assumes that
         the point is at the same z location as the nearest point on the edge.
         """
-
         if self.M is None:
-            return ''
+            coords = ''
 
-        if self.button_pressed in self._rotate_btn:
+        elif self.button_pressed in self._rotate_btn:
             # ignore xd and yd and display angles instead
             norm_elev = art3d._norm_angle(self.elev)
             norm_azim = art3d._norm_angle(self.azim)
             norm_roll = art3d._norm_angle(self.roll)
-            return (f"elevation={norm_elev:.0f}\N{DEGREE SIGN}, "
-                    f"azimuth={norm_azim:.0f}\N{DEGREE SIGN}, "
-                    f"roll={norm_roll:.0f}\N{DEGREE SIGN}"
-                    ).replace("-", "\N{MINUS SIGN}")
+            coords = (f"elevation={norm_elev:.0f}\N{DEGREE SIGN}, "
+                      f"azimuth={norm_azim:.0f}\N{DEGREE SIGN}, "
+                      f"roll={norm_roll:.0f}\N{DEGREE SIGN}"
+                      ).replace("-", "\N{MINUS SIGN}")
 
+        else:
+            p1 = self._calc_coord(self, xd, yd, renderer)
+            xs = self.format_xdata(p1[0])
+            ys = self.format_ydata(p1[1])
+            zs = self.format_zdata(p1[2])
+            coords = f'x={xs}, y={ys}, z={zs}'
+
+        return coords
+
+    def _calc_coord(self, xd, yd, renderer=None):
+        """
+        Given the 2D view coordinates, find the point on the nearest axis pane
+        that lies directly below those coordinates.
+        """
         # convert to data coordinates
         x, y, z = proj3d.inv_transform(xd, yd, 0, self.M)
         p0 = np.array([x,y,z])
@@ -1033,12 +1046,10 @@ class Axes3D(Axes):
         for i in range(3):
             scales[i] = (p0[i] - pane_locs[i]) / self._view_w[i]
         scale = scales[np.argmin(abs(scales))]
-        p1 = p0 - scale*self._view_w
 
-        xs = self.format_xdata(p1[0])
-        ys = self.format_ydata(p1[1])
-        zs = self.format_zdata(p1[2])
-        return 'x=%s, y=%s, z=%s' % (xs, ys, zs)
+        # Calculate the point on the closest pane
+        p1 = p0 - scale*self._view_w
+        return p1
 
     def _on_move(self, event):
         """
