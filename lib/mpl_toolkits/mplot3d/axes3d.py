@@ -998,7 +998,7 @@ class Axes3D(Axes):
             val = func(z)
             return val
 
-    def format_coord(self, xd, yd):
+    def format_coord(self, xd, yd, renderer=None):
         """
         Given the 2D view coordinates attempt to guess a 3D coordinate.
         Looks for the nearest edge to the point and then assumes that
@@ -1018,24 +1018,26 @@ class Axes3D(Axes):
                     f"roll={norm_roll:.0f}\N{DEGREE SIGN}"
                     ).replace("-", "\N{MINUS SIGN}")
 
-        # nearest edge
-        p0, p1 = min(self.tunit_edges(),
-                     key=lambda edge: proj3d._line2d_seg_dist(
-                         edge[0], edge[1], (xd, yd)))
+        # convert to data coordinates
+        x, y, z = proj3d.inv_transform(xd, yd, 0, self.M)
+        p0 = np.array([x,y,z])
 
-        # scale the z value to match
-        x0, y0, z0 = p0
-        x1, y1, z1 = p1
-        d0 = np.hypot(x0-xd, y0-yd)
-        d1 = np.hypot(x1-xd, y1-yd)
-        dt = d0+d1
-        z = d1/dt * z0 + d0/dt * z1
+        # Get the pane locations for each of the axes
+        pane_locs = []
+        for axis in self._axis_map.values():
+            xys, loc = axis.active_pane(renderer)
+            pane_locs.append(loc)
 
-        x, y, z = proj3d.inv_transform(xd, yd, z, self.M)
+        # Find the distance to the nearest pane
+        scales = np.zeros(3)
+        for i in range(3):
+            scales[i] = (p0[i] - pane_locs[i]) / self._view_w[i]
+        scale = scales[np.argmin(abs(scales))]
+        p1 = p0 - scale*self._view_w
 
-        xs = self.format_xdata(x)
-        ys = self.format_ydata(y)
-        zs = self.format_zdata(z)
+        xs = self.format_xdata(p1[0])
+        ys = self.format_ydata(p1[1])
+        zs = self.format_zdata(p1[2])
         return 'x=%s, y=%s, z=%s' % (xs, ys, zs)
 
     def _on_move(self, event):

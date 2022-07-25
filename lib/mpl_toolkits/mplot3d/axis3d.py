@@ -278,21 +278,24 @@ class Axis(maxis.XAxis):
         tickdir = np.roll(info_i, -j)[np.roll(tickdirs_base, j)][i]
         return tickdir
 
-    def draw_pane(self, renderer):
-        renderer.open_group('pane3d', gid=self.get_gid())
-
+    def active_pane(self, renderer):
         mins, maxs, centers, deltas, tc, highs = self._get_coord_info(renderer)
-
         info = self._axinfo
         index = info['i']
         if not highs[index]:
+            loc = mins[index]
             plane = self._PLANES[2 * index]
         else:
+            loc = maxs[index]
             plane = self._PLANES[2 * index + 1]
         xys = [tc[p] for p in plane]
+        return xys, loc
+
+    def draw_pane(self, renderer):
+        renderer.open_group('pane3d', gid=self.get_gid())
+        xys, loc =self.active_pane(renderer)
         self.set_pane_pos(xys)
         self.pane.draw(renderer)
-
         renderer.close_group('pane3d')
 
     @artist.allow_rasterization
