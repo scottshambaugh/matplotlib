@@ -877,6 +877,63 @@ class Axes3D(Axes):
             ax.roll = roll
             ax._vertical_axis = vertical_axis
 
+
+    def set_camera_loc(self, camera_loc, origin=None, roll=None, vertical_axis=None, share=False):
+        """
+        Set the camera location.
+
+        Parameters
+        ----------
+        camera_loc : 3-tuple of floats
+            The location of the camera in data coordinates.
+        origin : 3-tuple of floats, default: None
+            The origin of the axes in data coordinates. If None, the center of
+            the axes is used.
+        roll : float, default: None
+            The roll angle in degrees rotates the camera about the viewing
+            axis. A positive angle spins the camera clockwise, causing the
+            scene to rotate counter-clockwise.
+            If None, then the current value is maintained.
+        share : bool, default: False
+            If ``True``, apply the settings to all Axes with shared views.
+        """
+
+        cx, cy, cz, dx, dy, dz = self._get_w_centers_ranges()
+        if origin is None:
+            origin = np.array([cx, cy, cz])
+        if roll is None:
+            roll = self.roll
+
+        camera_loc = np.asarray(camera_loc)
+
+        camera_offset = camera_loc - origin
+        scale = 2 * camera_offset / np.array([dx, dy, dz])  # TODO: should this be the behavior? Since dist is private
+
+        elev = np.rad2deg(np.arctan2(camera_offset[2], np.linalg.norm(camera_offset[:2])))
+        azim = np.rad2deg(np.arctan2(camera_offset[1], camera_offset[0]))
+
+        #vertical_axis = _api.check_getitem(
+        #    dict(x=0, y=1, z=2), vertical_axis=vertical_axis
+        #)
+
+        if share:
+            axes = {sibling for sibling
+                    in self._shared_axes['view'].get_siblings(self)}
+        else:
+            axes = [self]
+
+        for ax in axes:
+            # Set the scaled axis limits
+            ax.set_xlim3d(origin[0] - dx*scale[0]/2, origin[0] + dx*scale[0]/2)
+            ax.set_ylim3d(origin[1] - dy*scale[1]/2, origin[1] + dy*scale[1]/2)
+            ax.set_zlim3d(origin[2] - dz*scale[2]/2, origin[2] + dz*scale[2]/2)
+
+            ax.elev = elev
+            ax.azim = azim
+            ax.roll = roll
+            #ax._vertical_axis = vertical_axis
+
+
     def set_proj_type(self, proj_type, focal_length=None):
         """
         Set the projection type.
@@ -1142,7 +1199,7 @@ class Axes3D(Axes):
             coords = f'x={xs}, y={ys}, z pane={zs}'
         return coords
 
-    def _get_camera_loc(self):
+    def _get_camera_loc(self):  # TODO: make public?
         """
         Returns the current camera location in data coordinates.
         """
