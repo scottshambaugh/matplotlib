@@ -784,9 +784,9 @@ class Patch3DCollection(PatchCollection):
         # Force the collection to initialize the face and edgecolors
         # just in case it is a scalarmappable with a colormap.
         self.update_scalarmappable()
-        offsets = super().get_offsets()
-        if len(offsets) > 0:
-            xs, ys = offsets.T
+        offsets2d = super().get_offsets()
+        if len(offsets2d) > 0:
+            xs, ys = offsets2d.T
         else:
             xs = []
             ys = []
@@ -856,7 +856,8 @@ class Patch3DCollection(PatchCollection):
         return _set_offsets3d(self, offsets, zdir)
 
     def get_offsets3d(self):
-        """Return the 3d offsets for the collection.
+        """
+        Return the 3d offsets for the collection.
 
         Returns
         -------
@@ -1128,14 +1129,15 @@ class Path3DCollection(PathCollection):
         ----------
         offsets : (N, 3) or (3,) array-like
             The offsets to be set.
-        zdir : {'x', 'y', 'z'}
-            The axis in which to place the offsets. Default: 'z'.
+        zdir : {'x', 'y', 'z'}, default: 'z'
+            The axis in which to place the offsets.
             See `.get_dir_vector` for a description of the values.
         """
         return _set_offsets3d(self, offsets, zdir)
 
     def get_offsets3d(self):
-        """Return the 3d offsets for the collection.
+        """
+        Return the 3d offsets for the collection.
 
         Returns
         -------
@@ -1527,14 +1529,15 @@ class Poly3DCollection(PolyCollection):
         ----------
         offsets : (N, 3) or (3,) array-like
             The offsets to be set.
-        zdir : {'x', 'y', 'z'}
-            The axis in which to place the offsets. Default: 'z'.
+        zdir : {'x', 'y', 'z'}, default: 'z'
+            The axis in which to place the offsets.
             See `.get_dir_vector` for a description of the values.
         """
         return _set_offsets3d(self, offsets, zdir)
 
     def get_offsets3d(self):
-        """Return the 3d offsets for the collection.
+        """
+        Return the 3d offsets for the collection.
 
         Returns
         -------
@@ -1606,8 +1609,8 @@ def _set_offsets3d(col_3d, offsets, zdir='z'):
     ----------
     offsets : (N, 3) or (3,) array-like
         The offsets to be set.
-    zdir : {'x', 'y', 'z'}
-        The axis in which to place the offsets. Default: 'z'.
+    zdir : {'x', 'y', 'z'}, default: 'z'
+        The axis in which to place the offsets.
         See `.get_dir_vector` for a description of the values.
     """
     offsets = np.asanyarray(offsets)
