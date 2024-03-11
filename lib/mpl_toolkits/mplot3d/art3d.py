@@ -1608,7 +1608,7 @@ def _set_offsets3d(col_3d, offsets, zdir='z'):
     .. note::
 
         Since 3D collections have no common 3D base class, this function
-        factors out the common code for ``set_offests3d()`` methods.
+        factors out the common code for ``set_offsets3d()`` methods.
 
     Parameters
     ----------
@@ -1635,7 +1635,7 @@ def _get_offsets3d(col3d):
     .. note::
 
         Since 3D collections have no common 3D base class, this function
-        factors out the common code for ``get_offests3d()`` methods.
+        factors out the common code for ``get_offsets3d()`` methods.
 
         Usage pattern::
 
