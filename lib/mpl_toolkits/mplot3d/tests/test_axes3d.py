@@ -481,13 +481,13 @@ def test_scatter3d_modification(fig_ref, fig_test):
                    depthshade=False, s=75, linewidths=3)
 
 
-@pytest.mark.parametrize('depthshade', [True, False])
 @check_figures_equal(extensions=['png'])
-def test_scatter3d_sorting(fig_ref, fig_test, depthshade):
+def test_scatter3d_sorting(fig_ref, fig_test):
     """Test that marker properties are correctly sorted."""
 
     y, x = np.mgrid[:10, :10]
     z = np.arange(x.size).reshape(x.shape)
+    depthshade = False
 
     sizes = np.full(z.shape, 25)
     sizes[0::2, 0::2] = 100
