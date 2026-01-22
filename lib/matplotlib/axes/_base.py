@@ -3224,8 +3224,7 @@ class _AxesBase(martist.Artist):
 
         # Clear axis tick caches for this draw cycle
         for _axis in self._axis_map.values():
-            _axis._cached_ticks_to_draw = None
-            _axis._cached_ticklabel_bboxes = None
+            _axis._clear_ticks_cache()
 
         if not self.axison:
             for _axis in self._axis_map.values():
