@@ -5,6 +5,7 @@ Classes for including text in a figure.
 import functools
 import logging
 import math
+import itertools
 import weakref
 import numpy as np
 from numbers import Real
@@ -29,6 +30,17 @@ def _rotate(theta):
     Return an Affine2D object that rotates by the given angle in radians.
     """
     return Affine2D().rotate(theta)
+
+
+def _rotate_point(rotation, x, y):
+    """
+    Rotate point (x, y) by rotation angle in degrees
+    """
+    if rotation == 0:
+        return (x, y)
+    rotation_rad = math.radians(rotation)
+    cos, sin = math.cos(rotation_rad), math.sin(rotation_rad)
+    return (cos * x - sin * y, sin * x + cos * y)
 
 
 def _get_textbox(text, renderer):
@@ -516,19 +528,17 @@ class Text(Artist):
         # the corners of the unrotated bounding box
         corners_horiz = [(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin)]
 
-        # now rotate the bbox (skip if no rotation for speed)
+        # now rotate the bbox
         rotation = self.get_rotation()
-        if rotation != 0:
-            M = _rotate(math.radians(rotation))
-            corners_rotated = M.transform(corners_horiz)
-            # compute the bounds of the rotated box (direct indexing for speed)
-            (x0, y0), (x1, y1), (x2, y2), (x3, y3) = corners_rotated.tolist()
-            xmin = min(x0, x1, x2, x3)
-            xmax = max(x0, x1, x2, x3)
-            ymin = min(y0, y1, y2, y3)
-            ymax = max(y0, y1, y2, y3)
-            width = xmax - xmin
-            height = ymax - ymin
+        rotate = functools.partial(_rotate_point, rotation)
+        corners_rotated = [rotate(x, y) for x, y in corners_horiz]
+
+        # compute the bounds of the rotated box
+        xs, ys = zip(*corners_rotated)
+        xmin, xmax = min(xs), max(xs)
+        ymin, ymax = min(ys), max(ys)
+        width = xmax - xmin
+        height = ymax - ymin
 
         # Now move the box to the target position offset the display
         # bbox by alignment
@@ -582,8 +592,7 @@ class Text(Artist):
             else:
                 offsety = ymin1
 
-            if rotation != 0:
-                offsetx, offsety = M.transform((offsetx, offsety))
+            offsetx, offsety = rotate(offsetx, offsety)
 
         xmin -= offsetx
         ymin -= offsety
@@ -591,13 +600,9 @@ class Text(Artist):
         bbox = Bbox.from_bounds(xmin, ymin, width, height)
 
         # now rotate the positions around the first (x, y) position
-        if rotation != 0:
-            xys = (M.transform(offset_layout) - (offsetx, offsety)).tolist()
-        else:
-            xys = [(x - offsetx, y - offsety) for x, y in offset_layout]
-
-        info = [(ln, (w, h), xy[0], xy[1])
-                for ln, w, h, xy in zip(lines, ws, hs, xys)]
+        xys = [(x - offsetx, y - offsety)
+               for x, y in itertools.starmap(rotate, offset_layout)]
+        info = [(ln, (w, h), xy[0], xy[1]) for ln, w, h, xy in zip(lines, ws, hs, xys)]
         return bbox, info, descent
 
     def set_bbox(self, rectprops):
