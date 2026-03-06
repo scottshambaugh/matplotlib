@@ -1374,6 +1374,7 @@ class Poly3DCollection(PolyCollection):
         self._facecolor3d = PolyCollection.get_facecolor(self)
         self._edgecolor3d = PolyCollection.get_edgecolor(self)
         self._alpha3d = PolyCollection.get_alpha(self)
+        self._offsets3d = None
         self.stale = True
 
     def set_sort_zpos(self, val):
@@ -1399,18 +1400,23 @@ class Poly3DCollection(PolyCollection):
             if self._edge_is_mapped:
                 self._edgecolor3d = self._edgecolors
 
+        faces = self._faces
+        if getattr(self, '_offsets3d', None) is not None:
+            offsets_arr = np.column_stack(self._offsets3d)
+            faces = faces + offsets_arr[:, np.newaxis, :]  # broadcast per-face
+
         needs_masking = np.any(self._invalid_vertices)
-        num_faces = len(self._faces)
+        num_faces = len(faces)
         mask = self._invalid_vertices
 
         # Some faces might contain masked vertices, so we want to ignore any
         # errors that those might cause
         with np.errstate(invalid='ignore', divide='ignore'):
-            pfaces = proj3d._proj_transform_vectors(self._faces, self.axes.M)
+            pfaces = proj3d._proj_transform_vectors(faces, self.axes.M)
 
         if self._axlim_clip:
-            viewlim_mask = _viewlim_mask(self._faces[..., 0], self._faces[..., 1],
-                                         self._faces[..., 2], self.axes)
+            viewlim_mask = _viewlim_mask(faces[..., 0], faces[..., 1],
+                                         faces[..., 2], self.axes)
             if np.any(viewlim_mask):
                 needs_masking = True
                 mask = mask | viewlim_mask

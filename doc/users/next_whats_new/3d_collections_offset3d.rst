@@ -1,8 +1,11 @@
-3D Collections have ``set_offset3d`` and ``get_offset3d`` methods
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+3D Collections have ``set_offsets3d`` and ``get_offsets3d`` methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 All 3D Collections (``Patch3DCollection``, ``Path3DCollection``,
-``Poly3DCollection``) now have ``set_offset3d`` and ``get_offset3d`` methods
-which allow you to set and get the offset of the collection in data
-coordinates. In other words, this allows you to set and get the position of the
-of the collection points.
+``Poly3DCollection``) now have ``set_offsets3d`` and ``get_offsets3d`` methods
+which allow you to set and get the offsets of the collection in data
+coordinates.
+
+For ``Patch3DCollection`` and ``Path3DCollection`` (e.g. from `~.Axes3D.scatter`),
+this sets the position of each element. For ``Poly3DCollection``, the offsets
+translate the polygon faces in 3D space.
