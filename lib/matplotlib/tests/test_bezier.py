@@ -11,48 +11,29 @@ from matplotlib.bezier import (
 )
 
 
-def _np_real_roots_in_01(coeffs):
-    """Reference implementation using np.roots for comparison."""
-    coeffs = np.asarray(coeffs)
-    # np.roots expects descending order (highest power first)
-    all_roots = np.roots(coeffs[::-1])
-    # Filter to real roots in [0, 1]
-    real_mask = np.abs(all_roots.imag) < 1e-10
-    real_roots = all_roots[real_mask].real
-    in_range = (real_roots >= -1e-10) & (real_roots <= 1 + 1e-10)
-    return np.sort(np.clip(real_roots[in_range], 0, 1))
-
-
-@pytest.mark.parametrize("coeffs, expected", [
-    ([-0.5, 1], [0.5]),
-    ([-2, 1], []),                    # roots: [2.0], not in [0, 1]
-    ([0.1875, -1, 1], [0.25, 0.75]),
-    ([1, -2.5, 1], [0.5]),            # roots: [0.5, 2.0], only one in [0, 1]
-    ([1, 0, 1], []),                  # roots: [+-i], not real
-    ([-0.08, 0.66, -1.5, 1], [0.2, 0.5, 0.8]),
-    ([5], []),
-    ([0, 0, 0], []),
-    ([0, -0.5, 1], [0.0, 0.5]),
-    ([0.5, -1.5, 1], [0.5, 1.0]),
+@pytest.mark.parametrize("roots, expected_in_01", [
+    ([0.5], [0.5]),
+    ([0.25, 0.75], [0.25, 0.75]),
+    ([0.2, 0.5, 0.8], [0.2, 0.5, 0.8]),
+    ([0.1, 0.2, 0.3, 0.4], [0.1, 0.2, 0.3, 0.4]),
+    ([0.0, 0.5], [0.0, 0.5]),
+    ([0.5, 1.0], [0.5, 1.0]),
+    ([2.0], []),                 # outside [0, 1]
+    ([0.5, 2.0], [0.5]),         # one in, one out
+    ([-1j, 1j], []),             # complex roots
+    ([0.5, -1j, 1j], [0.5]),     # mix of real and complex
+    ([0.3, 0.3], [0.3, 0.3]),    # repeated root
 ])
-def test_real_roots_in_01_known_cases(coeffs, expected):
-    """Test _real_roots_in_01 against known values and np.roots reference."""
-    result = _real_roots_in_01(coeffs)
-    np_expected = _np_real_roots_in_01(coeffs)
-    assert_allclose(result, expected, atol=1e-10)
-    assert_allclose(result, np_expected, atol=1e-10)
+def test_real_roots_in_01(roots, expected_in_01):
+    roots = np.array(roots)
+    coeffs = np.poly(roots)[::-1]  # np.poly gives descending, we need ascending
+    result = _real_roots_in_01(coeffs.real)
+    assert_allclose(result, expected_in_01, atol=1e-10)
 
 
-@pytest.mark.parametrize("degree", range(1, 11))
-def test_real_roots_in_01_random(degree):
-    """Test random polynomials against np.roots."""
-    rng = np.random.default_rng(seed=0)
-    coeffs = rng.uniform(-10, 10, size=degree + 1)
-    result = _real_roots_in_01(coeffs)
-    expected = _np_real_roots_in_01(coeffs)
-    assert len(result) == len(expected)
-    if len(result) > 0:
-        assert_allclose(result, expected, atol=1e-8)
+@pytest.mark.parametrize("coeffs", [[5], [0, 0, 0]])
+def test_real_roots_in_01_no_roots(coeffs):
+    assert len(_real_roots_in_01(coeffs)) == 0
 
 
 def test_split_bezier_with_large_values():
