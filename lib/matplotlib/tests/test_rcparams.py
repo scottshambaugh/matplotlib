@@ -276,13 +276,9 @@ def generate_validator_testcases(valid):
                      (cycler(mew=[2, 5]),
                       cycler('markeredgewidth', [2, 5])),
                      ),
-         # This is *so* incredibly important: validate_cycler() eval's
-         # an arbitrary string! I think I have it locked down enough,
-         # and that is what this is testing.
-         # TODO: Note that these tests are actually insufficient, as it may
-         # be that they raised errors, but still did an action prior to
-         # raising the exception. We should devise some additional tests
-         # for that...
+         # validate_cycler() parses an arbitrary string using a safe
+         # AST-based parser (no eval). These tests verify that only valid
+         # cycler expressions are accepted.
          'fail': ((4, ValueError),  # Gotta be a string or Cycler object
                   ('cycler("bleh, [])', ValueError),  # syntax error
                   ('Cycler("linewidth", [1, 2, 3])',
@@ -462,6 +458,14 @@ def test_validate_cycler_bad_color_string():
     msg = "'foo' is neither a color sequence name nor can it be interpreted as a list"
     with pytest.raises(ValueError, match=msg):
         validate_cycler("cycler('color', 'foo')")
+
+
+def test_validate_cycler_no_code_execution():
+    # List comprehensions are arbitrary code. The old eval()-based parser
+    # would execute this successfully, but the AST-based parser rejects it
+    # because only literal values are allowed in cycler arguments.
+    with pytest.raises(ValueError):
+        validate_cycler("cycler('color', [x for x in ['r', 'g', 'b']])")
 
 
 @pytest.mark.parametrize('weight, parsed_weight', [
