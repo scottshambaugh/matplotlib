@@ -847,9 +847,8 @@ def _eval_cycler_expr(node):
     if isinstance(node, ast.Call):
         if not (isinstance(node.func, ast.Name) and node.func.id == 'cycler'):
             raise ValueError("only the 'cycler()' function is allowed")
-        args = [ast.literal_eval(ast.unparse(a)) for a in node.args]
-        kwargs = {kw.arg: ast.literal_eval(ast.unparse(kw.value))
-                  for kw in node.keywords}
+        args = [ast.literal_eval(a) for a in node.args]
+        kwargs = {kw.arg: ast.literal_eval(kw.value) for kw in node.keywords}
         return cycler(*args, **kwargs)
     raise ValueError(
         f"Unsupported expression in cycler string: {ast.dump(node)}")
