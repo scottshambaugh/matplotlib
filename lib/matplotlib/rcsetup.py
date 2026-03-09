@@ -36,7 +36,7 @@ from matplotlib._fontconfig_pattern import parse_fontconfig_pattern
 from matplotlib._enums import JoinStyle, CapStyle
 
 # Don't let the original cycler collide with our validating cycler
-from cycler import Cycler, cycler as ccycler
+from cycler import Cycler, concat as cconcat, cycler as ccycler
 
 
 class ValidateInStrings:
@@ -845,13 +845,32 @@ def _eval_cycler_expr(node):
             return left * right
         raise ValueError(f"Unsupported operator: {type(node.op).__name__}")
     if isinstance(node, ast.Call):
-        if not (isinstance(node.func, ast.Name) and node.func.id == 'cycler'):
-            raise ValueError("only the 'cycler()' function is allowed")
-        args = [ast.literal_eval(a) for a in node.args]
+        if not (isinstance(node.func, ast.Name)
+                and node.func.id in ('cycler', 'concat')):
+            raise ValueError(
+                "only the 'cycler()' and 'concat()' functions are allowed")
+        func = cycler if node.func.id == 'cycler' else cconcat
+        args = [_eval_cycler_expr(a) for a in node.args]
         kwargs = {kw.arg: ast.literal_eval(kw.value) for kw in node.keywords}
-        return cycler(*args, **kwargs)
-    raise ValueError(
-        f"Unsupported expression in cycler string: {ast.dump(node)}")
+        return func(*args, **kwargs)
+    if isinstance(node, ast.Subscript):
+        value = _eval_cycler_expr(node.value)
+        sl = node.slice
+        if isinstance(sl, ast.Slice):
+            s = slice(
+                ast.literal_eval(sl.lower) if sl.lower else None,
+                ast.literal_eval(sl.upper) if sl.upper else None,
+                ast.literal_eval(sl.step) if sl.step else None,
+            )
+            return value[s]
+        raise ValueError("only slicing is supported, not indexing")
+    # Allow literal values (int, strings, lists, tuples) as arguments
+    # to cycler() and concat().
+    try:
+        return ast.literal_eval(node)
+    except (ValueError, TypeError):
+        raise ValueError(
+            f"Unsupported expression in cycler string: {ast.dump(node)}")
 
 
 # A validator dedicated to the named legend loc

@@ -275,6 +275,12 @@ def generate_validator_testcases(valid):
                       cycler('linestyle', ['-', '--'])),
                      (cycler(mew=[2, 5]),
                       cycler('markeredgewidth', [2, 5])),
+                     ("2 * cycler('color', 'rgb')", 2 * cycler('color', 'rgb')),
+                     ("cycler('color', 'rgb') * 2", cycler('color', 'rgb') * 2),
+                     ("concat(cycler('color', 'rgb'), cycler('color', 'cmk'))",
+                      cycler('color', list('rgbcmk'))),
+                     ("cycler('color', 'rgbcmk')[:3]", cycler('color', list('rgb'))),
+                     ("cycler('color', 'rgb')[::-1]", cycler('color', list('bgr'))),
                      ),
          # validate_cycler() parses an arbitrary string using a safe
          # AST-based parser (no eval). These tests verify that only valid
