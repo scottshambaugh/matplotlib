@@ -1,0 +1,7 @@
+Arbitrary code in ``axes.prop_cycle`` rcParam strings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``axes.prop_cycle`` rcParam previously accepted arbitrary Python
+expressions by passing the string to ``eval()``. This is deprecated immediately
+without replacement for security reasons. The previously documented cycler
+operations at https://matplotlib.org/cycler/ are still supported.
