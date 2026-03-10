@@ -300,6 +300,9 @@ def generate_validator_testcases(valid):
                    ValueError),
                   ("cycler('c', [j.__class__(j).lower() for j in ['r', 'b']])",
                    ValueError),
+                  # list comprehensions are arbitrary code, even if "safe"
+                  ("cycler('color', [x for x in ['r', 'g', 'b']])",
+                   ValueError),
                   ('1 + 2', ValueError),  # doesn't produce a Cycler object
                   ('os.system("echo Gotcha")', ValueError),  # os not available
                   ('import os', ValueError),  # should not be able to import
@@ -464,14 +467,6 @@ def test_validate_cycler_bad_color_string():
     msg = "'foo' is neither a color sequence name nor can it be interpreted as a list"
     with pytest.raises(ValueError, match=msg):
         validate_cycler("cycler('color', 'foo')")
-
-
-def test_validate_cycler_no_code_execution():
-    # List comprehensions are arbitrary code. The old eval()-based parser
-    # would execute this successfully, but the AST-based parser rejects it
-    # because only literal values are allowed in cycler arguments.
-    with pytest.raises(ValueError):
-        validate_cycler("cycler('color', [x for x in ['r', 'g', 'b']])")
 
 
 @pytest.mark.parametrize('weight, parsed_weight', [
