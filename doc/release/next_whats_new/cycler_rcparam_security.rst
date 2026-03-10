@@ -1,10 +1,10 @@
-``axes.prop_cycle`` rcParam must be literal
---------------------------------------------
+``axes.prop_cycle`` rcParam security improvements
+-------------------------------------------------
 
-The ``axes.prop_cycle`` rcParam is now parsed safely without ``eval()``. Only
-literal ``cycler()`` and ``concat()`` calls combined with ``+``, ``*``, and
-slicing are allowed. All previously valid cycler strings continue to work,
-for example:
+The ``axes.prop_cycle`` rcParam is now parsed in a safer and more restricted
+manner. Only literals, ``cycler()`` and ``concat()`` calls, the operators
+``+`` and ``*``, and slicing are allowed. All previously valid cycler strings
+documented at https://matplotlib.org/cycler/ are still supported, for example:
 
 .. code-block:: none
 

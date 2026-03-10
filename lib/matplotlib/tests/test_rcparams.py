@@ -276,6 +276,7 @@ def generate_validator_testcases(valid):
                      (cycler(mew=[2, 5]),
                       cycler('markeredgewidth', [2, 5])),
                      ("2 * cycler('color', 'rgb')", 2 * cycler('color', 'rgb')),
+                     ("2 * cycler('color', 'r' + 'gb')", 2 * cycler('color', 'rgb')),
                      ("cycler('color', 'rgb') * 2", cycler('color', 'rgb') * 2),
                      ("concat(cycler('color', 'rgb'), cycler('color', 'cmk'))",
                       cycler('color', list('rgbcmk'))),
@@ -287,6 +288,8 @@ def generate_validator_testcases(valid):
          # cycler expressions are accepted.
          'fail': ((4, ValueError),  # Gotta be a string or Cycler object
                   ('cycler("bleh, [])', ValueError),  # syntax error
+                  ("cycler('color', 'rgb') * * cycler('color', 'rgb')",  # syntax error
+                  ValueError),
                   ('Cycler("linewidth", [1, 2, 3])',
                    ValueError),  # only 'cycler()' function is allowed
                   # do not allow dunder in string literals
