@@ -657,6 +657,20 @@ def test_rcparams_path_sketch_from_file(tmp_path, value):
         assert mpl.rcParams["path.sketch"] == (1, 2, 3)
 
 
+def test_file_blacklist(tmp_path, caplog):
+    """Blacklisted rcParams should be ignored with a warning when loaded."""
+    rc_path = tmp_path / "matplotlibrc"
+    rc_path.write_text("figure.hooks: my_module:my_func\nlines.linewidth: 42")
+
+    with caplog.at_level("WARNING", logger="matplotlib"):
+        with mpl.rc_context(fname=rc_path):
+            # Blacklisted param should be unchanged (default is []).
+            assert mpl.rcParams["figure.hooks"] == []
+            # Non-blacklisted param should load normally.
+            assert mpl.rcParams["lines.linewidth"] == 42
+    assert "not supported in config files" in caplog.text
+
+
 @pytest.mark.parametrize('group, option, alias, value', [
     ('lines',  'linewidth',        'lw', 3),
     ('lines',  'linestyle',        'ls', 'dashed'),

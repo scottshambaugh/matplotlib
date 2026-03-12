@@ -876,7 +876,8 @@ def _open_file_or_url(fname):
             yield f
 
 
-def _rc_params_in_file(fname, transform=lambda x: x, fail_on_error=False):
+def _rc_params_in_file(fname, transform=lambda x: x, fail_on_error=False,
+                       use_file_blacklist=True):
     """
     Construct a `RcParams` instance from file *fname*.
 
@@ -892,6 +893,9 @@ def _rc_params_in_file(fname, transform=lambda x: x, fail_on_error=False):
         before further parsing.
     fail_on_error : bool, default: False
         Whether invalid entries should result in an exception or a warning.
+    use_file_blacklist : bool, default: True
+        If True, filter out rcParams in `_RCPARAMS_FROM_FILE_BLACKLIST` that
+        should only be set programmatically (e.g. ``figure.hooks``).
     """
     import matplotlib as mpl
     rc_temp = {}
@@ -924,6 +928,13 @@ def _rc_params_in_file(fname, transform=lambda x: x, fail_on_error=False):
     config = RcParams()
 
     for key, (val, line, line_no) in rc_temp.items():
+        if use_file_blacklist and key in rcsetup._RCPARAMS_FROM_FILE_BLACKLIST:
+            _log.warning('%r is not supported in config files and will be '
+                         'ignored; set it programmatically with '
+                         '`matplotlib.rcParams[%r] = ...` instead. '
+                         '(file %r, line %d)',
+                         key, key, fname, line_no)
+            continue
         if key in rcsetup._validators:
             if fail_on_error:
                 config[key] = val  # try to convert to proper type or raise
@@ -988,7 +999,8 @@ rcParamsDefault = _rc_params_in_file(
     cbook._get_data_path("matplotlibrc"),
     # Strip leading comment.
     transform=lambda line: line[1:] if line.startswith("#") else line,
-    fail_on_error=True)
+    fail_on_error=True,
+    use_file_blacklist=False)
 rcParamsDefault._update_raw(rcsetup._hardcoded_defaults)
 rcParamsDefault._ensure_has_backend()
 

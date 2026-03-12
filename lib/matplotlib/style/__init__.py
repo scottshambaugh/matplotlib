@@ -37,7 +37,8 @@ _STYLE_BLACKLIST = {
     'webagg.port_retries', 'webagg.open_in_browser', 'backend_fallback',
     'toolbar', 'timezone', 'figure.max_open_warning',
     'figure.raise_window', 'savefig.directory', 'tk.window_focus',
-    'docstring.hardcopy', 'date.epoch'}
+    'docstring.hardcopy', 'date.epoch',
+    'figure.hooks'}
 
 
 @_docstring.Substitution(

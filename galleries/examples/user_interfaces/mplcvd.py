@@ -3,8 +3,10 @@ mplcvd -- an example of figure hook
 ===================================
 
 To use this hook, ensure that this module is in your ``PYTHONPATH``, and set
-``rcParams["figure.hooks"] = ["mplcvd:setup"]``.  This hook depends on
-the ``colorspacious`` third-party module.
+``rcParams["figure.hooks"] = ["mplcvd:setup"]`` in your Python code. Note
+that ``figure.hooks`` must be set programmatically and cannot be set from
+``matplotlibrc`` or style files. This hook depends on the ``colorspacious``
+third-party module.
 """
 
 import functools

@@ -1445,6 +1445,10 @@ _hardcoded_defaults = {  # Defaults not inferred from
 _validators = {k: _convert_validator_spec(k, conv)
                for k, conv in _validators.items()}
 
+# rcParams that can execute arbitrary code and should only be set
+# programmatically, never loaded from config files.
+_RCPARAMS_FROM_FILE_BLACKLIST = {'figure.hooks'}
+
 
 @dataclass
 class _Param:
