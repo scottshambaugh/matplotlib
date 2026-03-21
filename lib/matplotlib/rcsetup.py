@@ -854,16 +854,16 @@ def _eval_cycler_expr(node):
         kwargs = {kw.arg: ast.literal_eval(kw.value) for kw in node.keywords}
         return func(*args, **kwargs)
     if isinstance(node, ast.Subscript):
-        value = _eval_cycler_expr(node.value)
         sl = node.slice
-        if isinstance(sl, ast.Slice):
-            s = slice(
-                ast.literal_eval(sl.lower) if sl.lower else None,
-                ast.literal_eval(sl.upper) if sl.upper else None,
-                ast.literal_eval(sl.step) if sl.step else None,
-            )
-            return value[s]
-        raise ValueError("only slicing is supported, not indexing")
+        if not isinstance(sl, ast.Slice):
+            raise ValueError("only slicing is supported, not indexing")
+        s = slice(
+            ast.literal_eval(sl.lower) if sl.lower else None,
+            ast.literal_eval(sl.upper) if sl.upper else None,
+            ast.literal_eval(sl.step) if sl.step else None,
+        )
+        value = _eval_cycler_expr(node.value)
+        return value[s]
     # Allow literal values (int, strings, lists, tuples) as arguments
     # to cycler() and concat().
     try:
