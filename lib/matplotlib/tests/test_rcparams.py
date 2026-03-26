@@ -277,6 +277,8 @@ def generate_validator_testcases(valid):
                       cycler('markeredgewidth', [2, 5])),
                      ("2 * cycler('color', 'rgb')", 2 * cycler('color', 'rgb')),
                      ("2 * cycler('color', 'r' + 'gb')", 2 * cycler('color', 'rgb')),
+                     ("cycler(c='r' + 'gb', lw=[1, 2, 3])",
+                      cycler('color', 'rgb') + cycler('linewidth', [1, 2, 3])),
                      ("cycler('color', 'rgb') * 2", cycler('color', 'rgb') * 2),
                      ("concat(cycler('color', 'rgb'), cycler('color', 'cmk'))",
                       cycler('color', list('rgbcmk'))),

@@ -851,7 +851,7 @@ def _eval_cycler_expr(node):
                 "only the 'cycler()' and 'concat()' functions are allowed")
         func = cycler if node.func.id == 'cycler' else cconcat
         args = [_eval_cycler_expr(a) for a in node.args]
-        kwargs = {kw.arg: ast.literal_eval(kw.value) for kw in node.keywords}
+        kwargs = {kw.arg: _eval_cycler_expr(kw.value) for kw in node.keywords}
         return func(*args, **kwargs)
     if isinstance(node, ast.Subscript):
         sl = node.slice
