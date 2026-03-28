@@ -665,6 +665,10 @@ class ConciseDateFormatter(ticker.Formatter):
 
     """
 
+    offset_string = _api.deprecate_privatize_attribute(
+        "3.11", alternative="get_offset()"
+    )
+
     def __init__(self, locator, tz=None, formats=None, offset_formats=None,
                  zero_formats=None, show_offset=True, *, usetex=None):
         """
@@ -719,7 +723,7 @@ class ConciseDateFormatter(ticker.Formatter):
                                    '%Y-%b-%d',
                                    '%Y-%b-%d',
                                    '%Y-%b-%d %H:%M']
-        self.offset_string = ''
+        self._offset_string = ''
         self.show_offset = show_offset
         self._usetex = mpl._val_or_rc(usetex, 'text.usetex')
 
@@ -799,13 +803,13 @@ class ConciseDateFormatter(ticker.Formatter):
             if (self._locator.axis and
                     self._locator.axis.__name__ in ('xaxis', 'yaxis')
                     and self._locator.axis.get_inverted()):
-                self.offset_string = tickdatetime[0].strftime(offsetfmts[level])
+                self._offset_string = tickdatetime[0].strftime(offsetfmts[level])
             else:
-                self.offset_string = tickdatetime[-1].strftime(offsetfmts[level])
+                self._offset_string = tickdatetime[-1].strftime(offsetfmts[level])
             if self._usetex:
-                self.offset_string = _wrap_in_tex(self.offset_string)
+                self._offset_string = _wrap_in_tex(self._offset_string)
         else:
-            self.offset_string = ''
+            self._offset_string = ''
 
         if self._usetex:
             return [_wrap_in_tex(l) for l in labels]
@@ -813,7 +817,7 @@ class ConciseDateFormatter(ticker.Formatter):
             return labels
 
     def get_offset(self):
-        return self.offset_string
+        return self._offset_string
 
     def format_data_short(self, value):
         return num2date(value, tz=self._tz).strftime('%Y-%m-%d %H:%M:%S')
