@@ -2207,6 +2207,8 @@ class Parser:
 
         p.overline = cmd(r"\overline", p.required_group("body"))
 
+        p.underline = cmd(r"\underline", p.required_group("body"))
+
         p.overset  = cmd(
             r"\overset",
             p.optional_group("annotation") + p.optional_group("body"))
@@ -2259,6 +2261,7 @@ class Parser:
             | p.underset
             | p.sqrt
             | p.overline
+            | p.underline
             | p.text
             | p.boldsymbol
             | p.substack
@@ -2944,6 +2947,21 @@ class Parser:
 
         hlist = Hlist([rightside])
         return [hlist]
+
+    def underline(self, toks: ParseResults) -> T.Any:
+        body = toks["body"]
+        state = self.get_state()
+        thickness = state.get_current_underline_thickness()
+        # Place the underline below `body` (node735).
+        vlist = Vlist([
+            Hlist([body]),
+            Kern(3 * thickness),
+            Hrule(state, thickness),
+        ])
+        delta = vlist.height + vlist.depth + thickness
+        vlist.height = body.height
+        vlist.depth = delta - vlist.height
+        return [Hlist([vlist])]
 
     def _auto_sized_delimiter(self, front: str,
                               middle: list[Box | Char | str],
