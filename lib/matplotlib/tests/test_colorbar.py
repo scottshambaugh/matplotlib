@@ -1,4 +1,5 @@
 import platform
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -309,6 +310,18 @@ def test_remove_from_figure_cl():
     post_position = ax.get_position()
     np.testing.assert_allclose(pre_position.get_points(),
                                post_position.get_points())
+
+
+def test_axes_remove():
+    """Removing the colorbar's axes should also remove the colorbar"""
+    fig, ax = plt.subplots()
+    sc = ax.scatter([1, 2], [3, 4])
+    cb = fig.colorbar(sc)
+
+    with mock.patch.object(cb, 'remove') as mock_cb_remove:
+        cb.ax.remove()
+
+    mock_cb_remove.assert_called()
 
 
 def test_colorbarbase():
