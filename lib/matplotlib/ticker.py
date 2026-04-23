@@ -213,7 +213,9 @@ class Formatter(TickHelper):
     """
     # some classes want to see all the locs to help format
     # individual ones
-    locs = []
+    _locs = []
+
+    locs = _api.deprecate_privatize_attribute("3.11")
 
     def __call__(self, x, pos=None):
         """
@@ -293,7 +295,7 @@ class Formatter(TickHelper):
         This method is called before computing the tick labels because some
         formatters need to know all tick locations to do so.
         """
-        self.locs = locs
+        self._locs = locs
 
     @staticmethod
     def fix_minus(s):
@@ -507,6 +509,9 @@ class ScalarFormatter(Formatter):
 
     """
 
+    orderOfMagnitude = _api.deprecate_privatize_attribute("3.11")
+    format = _api.deprecate_privatize_attribute("3.11")
+
     def __init__(self, useOffset=None, useMathText=None, useLocale=None, *,
                  usetex=None):
         useOffset = mpl._val_or_rc(useOffset, 'axes.formatter.useoffset')
@@ -514,8 +519,8 @@ class ScalarFormatter(Formatter):
         self.set_useOffset(useOffset)
         self.set_usetex(usetex)
         self.set_useMathText(useMathText)
-        self.orderOfMagnitude = 0
-        self.format = ''
+        self._orderOfMagnitude = 0
+        self._format = ''
         self._scientific = True
         self._powerlimits = mpl.rcParams['axes.formatter.limits']
         self.set_useLocale(useLocale)
@@ -664,13 +669,13 @@ class ScalarFormatter(Formatter):
         """
         Return the format for tick value *x* at position *pos*.
         """
-        if len(self.locs) == 0:
+        if len(self._locs) == 0:
             return ''
         else:
-            xp = (x - self.offset) / (10. ** self.orderOfMagnitude)
+            xp = (x - self.offset) / (10. ** self._orderOfMagnitude)
             if abs(xp) < 1e-8:
                 xp = 0
-            return self._format_maybe_minus_and_locale(self.format, xp)
+            return self._format_maybe_minus_and_locale(self._format, xp)
 
     def set_scientific(self, b):
         """
@@ -764,20 +769,20 @@ class ScalarFormatter(Formatter):
         """
         Return scientific notation, plus offset.
         """
-        if len(self.locs) == 0:
+        if len(self._locs) == 0:
             return ''
-        if self.orderOfMagnitude or self.offset:
+        if self._orderOfMagnitude or self.offset:
             offsetStr = ''
             sciNotStr = ''
             if self.offset:
                 offsetStr = self.format_data(self.offset)
                 if self.offset > 0:
                     offsetStr = '+' + offsetStr
-            if self.orderOfMagnitude:
+            if self._orderOfMagnitude:
                 if self._usetex or self._useMathText:
-                    sciNotStr = self.format_data(10 ** self.orderOfMagnitude)
+                    sciNotStr = self.format_data(10 ** self._orderOfMagnitude)
                 else:
-                    sciNotStr = '1e%d' % self.orderOfMagnitude
+                    sciNotStr = '1e%d' % self._orderOfMagnitude
             if self._useMathText or self._usetex:
                 if sciNotStr != '':
                     sciNotStr = r'\times\mathdefault{%s}' % sciNotStr
@@ -789,15 +794,15 @@ class ScalarFormatter(Formatter):
 
     def set_locs(self, locs):
         # docstring inherited
-        self.locs = locs
-        if len(self.locs) > 0:
+        self._locs = locs
+        if len(self._locs) > 0:
             if self._useOffset:
                 self._compute_offset()
             self._set_order_of_magnitude()
             self._set_format()
 
     def _compute_offset(self):
-        locs = self.locs
+        locs = self._locs
         # Restrict to visible ticks.
         vmin, vmax = sorted(self.axis.get_view_interval())
         locs = np.asarray(locs)
@@ -840,19 +845,19 @@ class ScalarFormatter(Formatter):
         # if using a numerical offset, find the exponent after applying the
         # offset. When lower power limit = upper <> 0, use provided exponent.
         if not self._scientific:
-            self.orderOfMagnitude = 0
+            self._orderOfMagnitude = 0
             return
         if self._powerlimits[0] == self._powerlimits[1] != 0:
             # fixed scaling when lower power limit = upper <> 0.
-            self.orderOfMagnitude = self._powerlimits[0]
+            self._orderOfMagnitude = self._powerlimits[0]
             return
         # restrict to visible ticks
         vmin, vmax = sorted(self.axis.get_view_interval())
-        locs = np.asarray(self.locs)
+        locs = np.asarray(self._locs)
         locs = locs[(vmin <= locs) & (locs <= vmax)]
         locs = np.abs(locs)
         if not len(locs):
-            self.orderOfMagnitude = 0
+            self._orderOfMagnitude = 0
             return
         if self.offset:
             oom = math.floor(math.log10(vmax - vmin))
@@ -863,20 +868,20 @@ class ScalarFormatter(Formatter):
             else:
                 oom = math.floor(math.log10(val))
         if oom <= self._powerlimits[0]:
-            self.orderOfMagnitude = oom
+            self._orderOfMagnitude = oom
         elif oom >= self._powerlimits[1]:
-            self.orderOfMagnitude = oom
+            self._orderOfMagnitude = oom
         else:
-            self.orderOfMagnitude = 0
+            self._orderOfMagnitude = 0
 
     def _set_format(self):
         # set the format string to format all the ticklabels
-        if len(self.locs) < 2:
+        if len(self._locs) < 2:
             # Temporarily augment the locations with the axis end points.
-            _locs = [*self.locs, *self.axis.get_view_interval()]
+            _locs = [*self._locs, *self.axis.get_view_interval()]
         else:
-            _locs = self.locs
-        locs = (np.asarray(_locs) - self.offset) / 10. ** self.orderOfMagnitude
+            _locs = self._locs
+        locs = (np.asarray(_locs) - self.offset) / 10. ** self._orderOfMagnitude
         loc_range = np.ptp(locs)
         # Curvilinear coordinates can yield two identical points.
         if loc_range == 0:
@@ -884,7 +889,7 @@ class ScalarFormatter(Formatter):
         # Both points might be zero.
         if loc_range == 0:
             loc_range = 1
-        if len(self.locs) < 2:
+        if len(self._locs) < 2:
             # We needed the end points only for the loc_range calculation.
             locs = locs[:-2]
         loc_range_oom = int(math.floor(math.log10(loc_range)))
@@ -898,9 +903,9 @@ class ScalarFormatter(Formatter):
             else:
                 break
         sigfigs += 1
-        self.format = f'%1.{sigfigs}f'
+        self._format = f'%1.{sigfigs}f'
         if self._usetex or self._useMathText:
-            self.format = r'$\mathdefault{%s}$' % self.format
+            self._format = r'$\mathdefault{%s}$' % self._format
 
 
 class LogFormatter(Formatter):
@@ -1292,7 +1297,7 @@ class LogitFormatter(Formatter):
         self._minor_number = minor_number
 
     def set_locs(self, locs):
-        self.locs = np.array(locs)
+        self._locs = np.array(locs)
         self._labelled.clear()
 
         if not self._minor:
@@ -1318,7 +1323,7 @@ class LogitFormatter(Formatter):
                 # the previous, and between the ticks and the next one. Ticks
                 # with smallest minimum are chosen. As tiebreak, the ticks
                 # with smallest sum is chosen.
-                diff = np.diff(-np.log(1 / self.locs - 1))
+                diff = np.diff(-np.log(1 / self._locs - 1))
                 space_pessimistic = np.minimum(
                     np.concatenate(((np.inf,), diff)),
                     np.concatenate((diff, (np.inf,))),
@@ -1328,7 +1333,7 @@ class LogitFormatter(Formatter):
                     + np.concatenate((diff, (0,)))
                 )
                 good_minor = sorted(
-                    range(len(self.locs)),
+                    range(len(self._locs)),
                     key=lambda i: (space_pessimistic[i], space_sum[i]),
                 )[-self._minor_number:]
                 self._labelled.update(locs[i] for i in good_minor)
@@ -1379,11 +1384,11 @@ class LogitFormatter(Formatter):
             exponent = round(math.log10(1 - x))
             s = self._one_minus("10^{%d}" % exponent)
         elif x < 0.1:
-            s = self._format_value(x, self.locs)
+            s = self._format_value(x, self._locs)
         elif x > 0.9:
-            s = self._one_minus(self._format_value(1-x, 1-self.locs))
+            s = self._one_minus(self._format_value(1-x, 1-self._locs))
         else:
-            s = self._format_value(x, self.locs, sci_notation=False)
+            s = self._format_value(x, self._locs, sci_notation=False)
         return r"$\mathdefault{%s}$" % s
 
     def format_data_short(self, value):
@@ -1489,18 +1494,18 @@ class EngFormatter(ScalarFormatter):
         If there is no currently offset in the data, it returns the best
         engineering formatting that fits the given argument, independently.
         """
-        if len(self.locs) == 0 or self.offset == 0:
+        if len(self._locs) == 0 or self.offset == 0:
             return self.fix_minus(self.format_data(x))
         else:
-            xp = (x - self.offset) / (10. ** self.orderOfMagnitude)
+            xp = (x - self.offset) / (10. ** self._orderOfMagnitude)
             if abs(xp) < 1e-8:
                 xp = 0
-            return self._format_maybe_minus_and_locale(self.format, xp)
+            return self._format_maybe_minus_and_locale(self._format, xp)
 
     def set_locs(self, locs):
         # docstring inherited
-        self.locs = locs
-        if len(self.locs) > 0:
+        self._locs = locs
+        if len(self._locs) > 0:
             vmin, vmax = sorted(self.axis.get_view_interval())
             if self._useOffset:
                 self._compute_offset()
@@ -1514,17 +1519,17 @@ class EngFormatter(ScalarFormatter):
                     # value:
                     self.offset = round((vmin + vmax)/2, 3)
             # Use log1000 to use engineers' oom standards
-            self.orderOfMagnitude = math.floor(math.log(vmax - vmin, 1000))*3
+            self._orderOfMagnitude = math.floor(math.log(vmax - vmin, 1000))*3
             self._set_format()
 
     # Simplify a bit ScalarFormatter.get_offset: We always want to use
     # self.format_data. Also we want to return a non-empty string only if there
-    # is an offset, no matter what is self.orderOfMagnitude. If there _is_ an
-    # offset, self.orderOfMagnitude is consulted. This behavior is verified
+    # is an offset, no matter what is self._orderOfMagnitude. If there _is_ an
+    # offset, self._orderOfMagnitude is consulted. This behavior is verified
     # in `test_ticker.py`.
     def get_offset(self):
         # docstring inherited
-        if len(self.locs) == 0:
+        if len(self._locs) == 0:
             return ''
         if self.offset:
             offsetStr = ''
@@ -1532,7 +1537,7 @@ class EngFormatter(ScalarFormatter):
                 offsetStr = self.format_data(self.offset)
                 if self.offset > 0:
                     offsetStr = '+' + offsetStr
-            sciNotStr = self.format_data(10 ** self.orderOfMagnitude)
+            sciNotStr = self.format_data(10 ** self._orderOfMagnitude)
             if self._useMathText or self._usetex:
                 if sciNotStr != '':
                     sciNotStr = r'\times%s' % sciNotStr
