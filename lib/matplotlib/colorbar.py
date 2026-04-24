@@ -11,6 +11,7 @@ In Matplotlib they are drawn into a dedicated `~.axes.Axes`.
    End-users most likely won't need to directly use this module's API.
 """
 
+import functools
 import logging
 
 import numpy as np
@@ -192,6 +193,17 @@ class _ColorbarAxesLocator:
         return (
             self._cbar.ax.get_subplotspec()
             or getattr(self._orig_locator, "get_subplotspec", lambda: None)())
+
+
+def _remove_cbar_axes(ax, cbar):
+    """
+    Replacement remove method for a colorbar's axes, so that the colorbar is
+    properly removed.
+
+    Note we define this at the module level to preserve pickling. A lambda or
+    local def within the Colorbar.__init__ method will not work.
+    """
+    cbar.remove()
 
 
 @_docstring.interpd
@@ -426,6 +438,14 @@ class Colorbar:
             "xlim_changed", self._do_extends)
         self._extend_cid2 = self.ax.callbacks.connect(
             "ylim_changed", self._do_extends)
+
+        # Ensure proper cleanup when `cbar.ax.remove()` is called.  We ensure
+        # this by overriding the Axes' remove method, so that `cbar.ax.remove()`
+        # actually calls `cbar.remove()`.  In turn, we store the original Axes'
+        # remove method in `_ax_remove`, which `cbar.remove()` will eventually
+        # call to clean up the Axes itself.
+        self._ax_remove = self.ax._remove_method
+        self.ax._remove_method = functools.partial(_remove_cbar_axes, cbar=self)
 
     @property
     def long_axis(self):
@@ -1032,7 +1052,7 @@ class Colorbar:
                 if self.ax in a._colorbars:
                     a._colorbars.remove(self.ax)
 
-        self.ax.remove()
+        self._ax_remove(self.ax)
 
         self.mappable.callbacks.disconnect(self.mappable.colorbar_cid)
         self.mappable.colorbar = None
