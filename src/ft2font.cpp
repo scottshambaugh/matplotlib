@@ -518,16 +518,7 @@ void FT2Font::set_text(
         }
 
         // extract glyph image and store it in our table
-        FT_Error error;
-        error = FT_Load_Glyph(rglyph.ftface, rglyph.index, flags);
-        if (error) {
-            throw std::runtime_error("failed to load glyph");
-        }
-        FT_Glyph thisGlyph;
-        error = FT_Get_Glyph(rglyph.ftface->glyph, &thisGlyph);
-        if (error) {
-            throw std::runtime_error("failed to get glyph");
-        }
+        auto thisGlyph = wrapped_font->load_glyph_copy(rglyph.index, flags);
 
         pen.x += rglyph.x_offset;
         pen.y += rglyph.y_offset;
@@ -738,23 +729,36 @@ FT2Font::CachedGlyph const *FT2Font::cache_glyph(FT_UInt glyph_index, FT_Int32 f
     return entry;
 }
 
-FT_Fixed FT2Font::load_glyph_cached(FT_UInt glyph_index, FT_Int32 flags)
+FT_Glyph FT2Font::load_glyph_copy(
+    FT_UInt glyph_index, FT_Int32 flags, FT_Fixed *linear_hori_advance)
 {
     auto const& cached = cache_glyph(glyph_index, flags);
-    if (!cached->glyph) {  // Not an outline, so load it the slow way.
-        load_glyph(glyph_index, flags);
-        return cached->linear_hori_advance;
-    }
     FT_Glyph glyph = nullptr;
-    FT_CHECK(FT_Glyph_Copy, cached->glyph, &glyph);
+    if (cached->glyph) {
+        FT_CHECK(FT_Glyph_Copy, cached->glyph, &glyph);
+    } else {  // Not an outline, so load it the slow way.
+        FT_CHECK(FT_Load_Glyph, face, glyph_index, flags);
+        FT_CHECK(FT_Get_Glyph, face->glyph, &glyph);
+    }
     auto owned = std::unique_ptr<std::remove_pointer_t<FT_Glyph>, decltype(&FT_Done_Glyph)>{
         glyph, &FT_Done_Glyph};
-    if (glyph_delta.x || glyph_delta.y) {
+    if (cached->glyph && (glyph_delta.x || glyph_delta.y)) {
         FT_CHECK(FT_Glyph_Transform, glyph, nullptr, &glyph_delta);
     }
-    glyphs.push_back(glyph);
+    if (linear_hori_advance) {
+        *linear_hori_advance = cached->linear_hori_advance;
+    }
+    return owned.release();
+}
+
+FT_Fixed FT2Font::load_glyph_cached(FT_UInt glyph_index, FT_Int32 flags)
+{
+    FT_Fixed linear_hori_advance = 0;
+    auto owned = std::unique_ptr<std::remove_pointer_t<FT_Glyph>, decltype(&FT_Done_Glyph)>{
+        load_glyph_copy(glyph_index, flags, &linear_hori_advance), &FT_Done_Glyph};
+    glyphs.push_back(owned.get());
     owned.release();  // `glyphs` owns it now.
-    return cached->linear_hori_advance;
+    return linear_hori_advance;
 }
 
 FT_Glyph FT2Font::render_glyph(

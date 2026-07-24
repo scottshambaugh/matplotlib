@@ -134,6 +134,8 @@ class FT2Font
                                  FT_Error &glyph_error,
                                  std::set<FT_String*> &glyph_seen_fonts);
     void load_glyph(FT_UInt glyph_index, FT_Int32 flags);
+    FT_Glyph load_glyph_copy(FT_UInt glyph_index, FT_Int32 flags,
+                             FT_Fixed *linear_hori_advance = nullptr);
     FT_Fixed load_glyph_cached(FT_UInt glyph_index, FT_Int32 flags);
     FT_Glyph render_glyph(FT_UInt glyph_index, FT_Int32 flags, FT_Render_Mode render_mode);
     std::tuple<long, long> get_width_height();
