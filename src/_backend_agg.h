@@ -152,6 +152,9 @@ class RendererAgg
     template <class ImageArray>
     void draw_text_image(GCAgg &gc, ImageArray &image, int x, int y, double angle);
 
+    template <class BufferArray, class PositionArray>
+    void draw_text_images(GCAgg &gc, BufferArray &buffer, PositionArray &positions);
+
     template <class ImageArray>
     void draw_image(GCAgg &gc,
                     double x,
@@ -743,6 +746,59 @@ inline void RendererAgg::draw_text_image(GCAgg &gc, ImageArray &image, int x, in
             for (int yi = text.y1; yi < text.y2; ++yi) {
                 pixFmt.blend_solid_hspan(text.x1, yi, deltax, gc.color,
                                          &image(yi - deltay, deltax2));
+            }
+        }
+    }
+}
+
+// Blit the glyph bitmaps packed by `ft2font._render_glyph_run`.
+template <class BufferArray, class PositionArray>
+inline void RendererAgg::draw_text_images(
+    GCAgg &gc, BufferArray &buffer, PositionArray &positions)
+{
+    if (positions.shape(0) == 0) {
+        return;
+    }
+
+    theRasterizer.reset_clipping();
+    rendererBase.reset_clipping(true);
+
+    agg::rect_i fig, clip;
+    fig.init(0, 0, width, height);
+    bool clipped =
+        gc.cliprect.x1 != 0.0 || gc.cliprect.y1 != 0.0 ||
+        gc.cliprect.x2 != 0.0 || gc.cliprect.y2 != 0.0;
+    if (clipped) {
+        clip.init(mpl_round_to_int(gc.cliprect.x1),
+                  mpl_round_to_int(height - gc.cliprect.y2),
+                  mpl_round_to_int(gc.cliprect.x2),
+                  mpl_round_to_int(height - gc.cliprect.y1));
+    }
+
+    auto data = buffer.data(0);
+    for (py::ssize_t i = 0; i < positions.shape(0); i++) {
+        auto offset = positions(i, 0);
+        auto rows = static_cast<int>(positions(i, 1));
+        auto cols = static_cast<int>(positions(i, 2));
+        // Positions this far out are clipped away below, so narrowing is safe.
+        auto x = static_cast<int>(positions(i, 3));
+        auto y = static_cast<int>(positions(i, 4));
+
+        agg::rect_i text;
+        auto deltay = y - rows;
+        text.init(x, deltay, x + cols, y);
+        text.clip(fig);
+        if (clipped) {
+            text.clip(clip);
+        }
+
+        if (text.x2 > text.x1) {
+            auto deltax = text.x2 - text.x1;
+            auto deltax2 = text.x1 - x;
+            for (auto yi = text.y1; yi < text.y2; ++yi) {
+                pixFmt.blend_solid_hspan(
+                    text.x1, yi, deltax, gc.color,
+                    data + offset + (yi - deltay) * cols + deltax2);
             }
         }
     }
