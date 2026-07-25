@@ -188,6 +188,23 @@ class FT2Font
     static constexpr size_t glyph_cache_max = 1024;
     void clear_glyph_cache();
 
+    // The size and charmap of one face.  The charmap is a counter, as FreeType
+    // offers no cheap way to identify the selected one.
+    using FaceState = std::tuple<FT_F26Dot6, FT_UInt, unsigned long>;
+    std::vector<FaceState> shaping_state() const;
+
+    // Everything that affects the shaped output of layout().
+    using LayoutCacheKey = std::tuple<std::u32string, FT_Int32,
+                                      std::optional<std::vector<std::string>>,
+                                      LanguageType, std::vector<FaceState>,
+                                      FT_Fixed, FT_Fixed, FT_Fixed, FT_Fixed>;
+    struct LayoutCacheEntry {
+        std::vector<raqm_glyph_t> glyphs;
+        std::set<FT_String *> seen_fonts;
+    };
+    static constexpr size_t layout_cache_max = 256;
+    std::map<LayoutCacheKey, LayoutCacheEntry> layout_cache;
+
     bool warn_if_used;
     py::array_t<uint8_t, py::array::c_style> image;
     FT_Face face;
@@ -198,6 +215,7 @@ class FT2Font
     FT_UInt char_dpi;
     FT_Matrix glyph_matrix;
     FT_Vector glyph_delta;
+    unsigned long charmap_generation;
     std::vector<FT2Font *> fallbacks;
     std::unordered_map<long, FT2Font *> char_to_font;
     FT_BBox bbox;
